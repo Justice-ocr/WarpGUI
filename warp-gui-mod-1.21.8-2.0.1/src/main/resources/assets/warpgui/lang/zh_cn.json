@@ -1,0 +1,12 @@
+{
+  "warpgui.title": "传送点列表",
+  "warpgui.search": "搜索传送点...",
+  "warpgui.teleport": "传送",
+  "warpgui.refresh": "刷新列表",
+  "warpgui.close": "关闭",
+  "warpgui.loading": "正在加载传送点列表...",
+  "warpgui.empty": "没有找到传送点",
+  "warpgui.teleporting": "正在传送到: ",
+  "warpgui.keybind": "打开传送点GUI",
+  "warpgui.no_warps": "无传送点，请先执行 /warp list"
+}

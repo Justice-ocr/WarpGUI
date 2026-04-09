@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "warpgui",
+  "version": "${version}",
+  "name": "Warp GUI",
+  "description": "中文 Warp 传送点图形界面 - 适配 HAW 模组，支持自动解析、搜索、点击传送",
+  "authors": ["WarpGUI"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/warpgui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.warpgui.WarpGuiMod"
+    ]
+  },
+  "mixins": [
+    "warpgui.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "haw": "*"
+  }
+}

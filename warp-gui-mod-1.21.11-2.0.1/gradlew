@@ -1,0 +1,12 @@
+#!/bin/sh
+# Gradle wrapper script for Linux/macOS
+
+GRADLE_APP_HOME="$(cd "$(dirname "$0")" && pwd)"
+exec "$GRADLE_APP_HOME/gradle/wrapper/gradle-wrapper.jar" "$@" 2>/dev/null || \
+  java -jar "$GRADLE_APP_HOME/gradle/wrapper/gradle-wrapper.jar" "$@" 2>/dev/null || \
+  (
+    echo "Downloading Gradle wrapper..."
+    curl -sL "https://services.gradle.org/distributions/gradle-8.8-bin.zip" -o /tmp/gradle.zip
+    unzip -q /tmp/gradle.zip -d /tmp/gradle
+    /tmp/gradle/gradle-8.8/bin/gradle "$@"
+  )

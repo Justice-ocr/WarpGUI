@@ -1,0 +1,12 @@
+{
+  "warpgui.title": "Warp List",
+  "warpgui.search": "Search warps...",
+  "warpgui.teleport": "Teleport",
+  "warpgui.refresh": "Refresh",
+  "warpgui.close": "Close",
+  "warpgui.loading": "Loading warp list...",
+  "warpgui.empty": "No warps found",
+  "warpgui.teleporting": "Teleporting to: ",
+  "warpgui.keybind": "Open Warp GUI",
+  "warpgui.no_warps": "No warps, run /warp list first"
+}
