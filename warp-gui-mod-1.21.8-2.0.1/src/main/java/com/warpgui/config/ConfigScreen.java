@@ -30,9 +30,9 @@ public class ConfigScreen extends Screen {
     private static final int L_MUTED      = 0xFF6B7A8D;
     private static final int L_DISABLED   = 0xFFB8C4D0;
     private static final int L_OK         = 0xFF2E8B57;
-    // 主题按钮（light → 按钮显示深色，方便区分）
     private static final int L_TBTN_BG    = 0xFF1A2330;
     private static final int L_TBTN_FG    = 0xFFEEF4FB;
+    // 主题按钮（light → 按钮显示深色，方便区分）
 
     // ════════════════════════════════════════════════════════════
     // 色盘 — Dark
@@ -50,8 +50,6 @@ public class ConfigScreen extends Screen {
     private static final int D_MUTED      = 0xFF6A8099;
     private static final int D_DISABLED   = 0xFF3A4A5A;
     private static final int D_OK         = 0xFF44BB77;
-    private static final int D_TBTN_BG    = 0xFF1A4070;
-    private static final int D_TBTN_FG    = 0xFFCCDDFF;
 
     // ════════════════════════════════════════════════════════════
     // 色盘 — Stylized
@@ -69,8 +67,6 @@ public class ConfigScreen extends Screen {
     private static final int S_MUTED      = 0xFF8090A8;
     private static final int S_DISABLED   = 0xFF404055;
     private static final int S_OK         = 0xFF88FFAA;
-    private static final int S_TBTN_BG    = 0xFF0F3460;
-    private static final int S_TBTN_FG    = 0xFFFF6B9D;
 
     // ════════════════════════════════════════════════════════════
     // 运行时色盘指针
@@ -82,40 +78,15 @@ public class ConfigScreen extends Screen {
     private boolean useShadow; // stylized 主题文字带阴影
 
     private void applyTheme() {
-        String t = WarpConfig.get().uiTheme;
-        boolean light = "light".equals(t);
-        boolean dark  = "dark".equals(t);
-        boolean sty   = !light && !dark; // stylized + fallback
-        useShadow = sty;
-
-        if (light) {
-            C_SCRIM     = L_SCRIM;    C_PANEL    = L_PANEL;
-            C_TOOLBAR   = L_TOOLBAR;  C_SEARCH_BG= L_SEARCH_BG;
-            C_BORDER    = L_BORDER;   C_DIVIDER  = L_DIVIDER;
-            C_ACCENT    = L_ACCENT;
-            C_ROW_SEL   = L_ROW_SEL;  C_ROW_HOVER= L_ROW_HOVER;
-            C_TEXT      = L_TEXT;     C_MUTED    = L_MUTED;
-            C_DISABLED  = L_DISABLED; C_OK       = L_OK;
-            C_TBTN_BG   = L_TBTN_BG;  C_TBTN_FG  = L_TBTN_FG;
-        } else if (dark) {
-            C_SCRIM     = D_SCRIM;    C_PANEL    = D_PANEL;
-            C_TOOLBAR   = D_TOOLBAR;  C_SEARCH_BG= D_SEARCH_BG;
-            C_BORDER    = D_BORDER;   C_DIVIDER  = D_DIVIDER;
-            C_ACCENT    = D_ACCENT;
-            C_ROW_SEL   = D_ROW_SEL;  C_ROW_HOVER= D_ROW_HOVER;
-            C_TEXT      = D_TEXT;     C_MUTED    = D_MUTED;
-            C_DISABLED  = D_DISABLED; C_OK       = D_OK;
-            C_TBTN_BG   = D_TBTN_BG;  C_TBTN_FG  = D_TBTN_FG;
-        } else {
-            C_SCRIM     = S_SCRIM;    C_PANEL    = S_PANEL;
-            C_TOOLBAR   = S_TOOLBAR;  C_SEARCH_BG= S_SEARCH_BG;
-            C_BORDER    = S_BORDER;   C_DIVIDER  = S_DIVIDER;
-            C_ACCENT    = S_ACCENT;
-            C_ROW_SEL   = S_ROW_SEL;  C_ROW_HOVER= S_ROW_HOVER;
-            C_TEXT      = S_TEXT;     C_MUTED    = S_MUTED;
-            C_DISABLED  = S_DISABLED; C_OK       = S_OK;
-            C_TBTN_BG   = S_TBTN_BG;  C_TBTN_FG  = S_TBTN_FG;
-        }
+        useShadow = false;
+        C_SCRIM     = L_SCRIM;    C_PANEL    = L_PANEL;
+        C_TOOLBAR   = L_TOOLBAR;  C_SEARCH_BG= L_SEARCH_BG;
+        C_BORDER    = L_BORDER;   C_DIVIDER  = L_DIVIDER;
+        C_ACCENT    = L_ACCENT;
+        C_ROW_SEL   = L_ROW_SEL;  C_ROW_HOVER= L_ROW_HOVER;
+        C_TEXT      = L_TEXT;     C_MUTED    = L_MUTED;
+        C_DISABLED  = L_DISABLED; C_OK       = L_OK;
+        C_TBTN_BG   = L_TBTN_BG;  C_TBTN_FG  = L_TBTN_FG;
     }
 
     // ── 布局常量 ─────────────────────────────────────────────────
@@ -128,7 +99,7 @@ public class ConfigScreen extends Screen {
     private static final int SRV_LIST_W = 104;
     private static final int SRV_ITEM_H = 18;
     private static final int TBTN_W     = 96;
-    private static final int TBTN_H     = 20;
+    private static final int TBTN_H     = 0;
 
     private final Screen parent;
     private int tab = 0;
@@ -152,7 +123,7 @@ public class ConfigScreen extends Screen {
     private int editX()        { return pX + PAD + SRV_LIST_W + PAD; }
     private int editW()        { return pW - PAD * 2 - SRV_LIST_W - PAD; }
     // 主题按钮：跟随最后一个指令字段下方，避免被字段遮住
-    private int tBtnX() { return pX + pW - PAD - TBTN_W; }
+    private int tBtnX() { return pX + pW - PAD; }
     private int tBtnY() {
         // 最后一个字段（index=5）底部 + 间距
         int lastFieldBottom = cmdRowY(5) + LABEL_H + FIELD_H;
@@ -218,7 +189,6 @@ public class ConfigScreen extends Screen {
         fPageDelay = addField(x, cmdRowY(5), w, String.valueOf(cfg.commands.pageDelayTicks), "1–100 tick");
 
         // 三态主题切换按钮（右下角）→ hotspot，自定义渲染在 render() 中进行
-        mkHotspot(tBtnX(), tBtnY(), TBTN_W, TBTN_H, this::toggleTheme);
     }
 
     private void buildServersTab() {
@@ -471,7 +441,6 @@ public class ConfigScreen extends Screen {
                 ctx.fill(x, ry + LABEL_H, x + fw, ry + LABEL_H + FIELD_H, C_SEARCH_BG);
             }
         }
-        renderThemeButton(ctx, mx, my);
     }
 
     private boolean isFocused(int fieldIdx) {

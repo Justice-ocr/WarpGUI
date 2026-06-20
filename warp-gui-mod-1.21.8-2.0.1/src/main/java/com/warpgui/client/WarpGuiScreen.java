@@ -129,7 +129,7 @@ public class WarpGuiScreen extends Screen {
     private boolean isLight, isDark, isStylized;
 
     private void applyTheme() {
-        String t = WarpConfig.get().uiTheme;
+        String t = "light";
         isLight    = "light".equals(t);
         isDark     = "dark".equals(t);
         isStylized = "stylized".equals(t);
