@@ -177,6 +177,7 @@ public class ConfigScreen extends Screen {
         int tabW = (pW - PAD * 2) / 2;
         cfgTab0Btn = mkBtn("Commands", pX + PAD,            tabY, tabW - 1,                TAB_H, () -> switchTab(0));
         cfgTab1Btn = mkBtn("Servers", pX + PAD + tabW + 1, tabY, pW - PAD * 2 - tabW - 1, TAB_H, () -> switchTab(1));
+        mkBtn(themeLabel(WarpConfig.get().uiTheme), tBtnX(), tBtnY(), TBTN_W, TBTN_H, this::toggleTheme);
 
         if (tab == 0) buildCommandsTab();
         else          buildServersTab();
@@ -192,7 +193,6 @@ public class ConfigScreen extends Screen {
         fSwitchSrv = addField(x, cmdRowY(4), w, cfg.commands.switchServer,                  "server {id}");
         fPageDelay = addField(x, cmdRowY(5), w, String.valueOf(cfg.commands.pageDelayTicks), "1–100 tick");
 
-        mkBtn(themeLabel(WarpConfig.get().uiTheme), tBtnX(), tBtnY(), TBTN_W, TBTN_H, this::toggleTheme);
     }
     private void buildServersTab() {
         WarpConfig cfg = WarpConfig.get();
