@@ -19,7 +19,7 @@ chmod +x gradlew && ./gradlew build
 
 产物：`build/libs/warp-gui-2.0.1.jar`
 
-## 其他版本
+## 版本分支
 
 | Minecraft | 分支 |
 |-----------|------|
@@ -27,7 +27,7 @@ chmod +x gradlew && ./gradlew build
 | 1.21.8 | `mc-1.21.8` |
 | 1.21.11 | `mc-1.21.11` |
 
-全部版本对照与跨版本同步见 [`main`](https://github.com/Justice-ocr/WarpGUI/tree/main)。
+默认分支为 `mc-1.21.11`。
 
 ## License
 
