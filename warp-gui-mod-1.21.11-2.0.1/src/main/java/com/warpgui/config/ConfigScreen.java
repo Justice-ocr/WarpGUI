@@ -30,9 +30,9 @@ public class ConfigScreen extends Screen {
     private static final int L_MUTED      = 0xFF6B7A8D;
     private static final int L_DISABLED   = 0xFFB8C4D0;
     private static final int L_OK         = 0xFF2E8B57;
-    // 主题按钮（light → 按钮显示深色，方便区分）
     private static final int L_TBTN_BG    = 0xFF1A2330;
     private static final int L_TBTN_FG    = 0xFFEEF4FB;
+    // 主题按钮（light → 按钮显示深色，方便区分）
 
     // ════════════════════════════════════════════════════════════
     // 色盘 — Dark
@@ -50,8 +50,6 @@ public class ConfigScreen extends Screen {
     private static final int D_MUTED      = 0xFF6A8099;
     private static final int D_DISABLED   = 0xFF3A4A5A;
     private static final int D_OK         = 0xFF44BB77;
-    private static final int D_TBTN_BG    = 0xFF1A4070;
-    private static final int D_TBTN_FG    = 0xFFCCDDFF;
 
     // ════════════════════════════════════════════════════════════
     // 色盘 — Stylized
@@ -69,8 +67,6 @@ public class ConfigScreen extends Screen {
     private static final int S_MUTED      = 0xFF8090A8;
     private static final int S_DISABLED   = 0xFF404055;
     private static final int S_OK         = 0xFF88FFAA;
-    private static final int S_TBTN_BG    = 0xFF0F3460;
-    private static final int S_TBTN_FG    = 0xFFFF6B9D;
 
     // ════════════════════════════════════════════════════════════
     // 运行时色盘指针
@@ -82,40 +78,19 @@ public class ConfigScreen extends Screen {
     private boolean useShadow; // stylized 主题文字带阴影
 
     private void applyTheme() {
-        String t = WarpConfig.get().uiTheme;
-        boolean light = "light".equals(t);
-        boolean dark  = "dark".equals(t);
-        boolean sty   = !light && !dark; // stylized + fallback
-        useShadow = sty;
+        useShadow = false;
+        C_SCRIM     = L_SCRIM;    C_PANEL    = L_PANEL;
+        C_TOOLBAR   = L_TOOLBAR;  C_SEARCH_BG= L_SEARCH_BG;
+        C_BORDER    = L_BORDER;   C_DIVIDER  = L_DIVIDER;
+        C_ACCENT    = L_ACCENT;
+        C_ROW_SEL   = L_ROW_SEL;  C_ROW_HOVER= L_ROW_HOVER;
+        C_TEXT      = L_TEXT;     C_MUTED    = L_MUTED;
+        C_DISABLED  = L_DISABLED; C_OK       = L_OK;
+        C_TBTN_BG   = L_TBTN_BG;  C_TBTN_FG  = L_TBTN_FG;
+    }
 
-        if (light) {
-            C_SCRIM     = L_SCRIM;    C_PANEL    = L_PANEL;
-            C_TOOLBAR   = L_TOOLBAR;  C_SEARCH_BG= L_SEARCH_BG;
-            C_BORDER    = L_BORDER;   C_DIVIDER  = L_DIVIDER;
-            C_ACCENT    = L_ACCENT;
-            C_ROW_SEL   = L_ROW_SEL;  C_ROW_HOVER= L_ROW_HOVER;
-            C_TEXT      = L_TEXT;     C_MUTED    = L_MUTED;
-            C_DISABLED  = L_DISABLED; C_OK       = L_OK;
-            C_TBTN_BG   = L_TBTN_BG;  C_TBTN_FG  = L_TBTN_FG;
-        } else if (dark) {
-            C_SCRIM     = D_SCRIM;    C_PANEL    = D_PANEL;
-            C_TOOLBAR   = D_TOOLBAR;  C_SEARCH_BG= D_SEARCH_BG;
-            C_BORDER    = D_BORDER;   C_DIVIDER  = D_DIVIDER;
-            C_ACCENT    = D_ACCENT;
-            C_ROW_SEL   = D_ROW_SEL;  C_ROW_HOVER= D_ROW_HOVER;
-            C_TEXT      = D_TEXT;     C_MUTED    = D_MUTED;
-            C_DISABLED  = D_DISABLED; C_OK       = D_OK;
-            C_TBTN_BG   = D_TBTN_BG;  C_TBTN_FG  = D_TBTN_FG;
-        } else {
-            C_SCRIM     = S_SCRIM;    C_PANEL    = S_PANEL;
-            C_TOOLBAR   = S_TOOLBAR;  C_SEARCH_BG= S_SEARCH_BG;
-            C_BORDER    = S_BORDER;   C_DIVIDER  = S_DIVIDER;
-            C_ACCENT    = S_ACCENT;
-            C_ROW_SEL   = S_ROW_SEL;  C_ROW_HOVER= S_ROW_HOVER;
-            C_TEXT      = S_TEXT;     C_MUTED    = S_MUTED;
-            C_DISABLED  = S_DISABLED; C_OK       = S_OK;
-            C_TBTN_BG   = S_TBTN_BG;  C_TBTN_FG  = S_TBTN_FG;
-        }
+    private boolean isVanillaTheme() {
+        return "vanilla".equals(WarpConfig.normalizeTheme(WarpConfig.get().uiTheme));
     }
 
     // ── 布局常量 ─────────────────────────────────────────────────
@@ -194,14 +169,15 @@ public class ConfigScreen extends Screen {
 
         // 工具栏：✕ 和 保存 → 透明 hotspot，自定义渲染
         int iconH = TOOLBAR_H - 10, iconY = pY + 5;
-        cfgCloseBtn = mkHotspot(pX + pW - 8 - 20,       iconY, 20, iconH, this::close);
-        cfgSaveBtn  = mkHotspot(pX + pW - 8 - 20 - 4 - 46, iconY, 46, iconH, this::save);
+        cfgCloseBtn = mkBtn("X", pX + pW - 8 - 28, iconY, 28, iconH, this::close);
+        cfgSaveBtn  = mkBtn("Save", pX + pW - 8 - 28 - 4 - 58, iconY, 58, iconH, this::save);
 
         // Tab 按钮 → 透明 hotspot，自定义渲染
         int tabY = pY + TOOLBAR_H;
         int tabW = (pW - PAD * 2) / 2;
-        cfgTab0Btn = mkHotspot(pX + PAD,            tabY, tabW - 1,                TAB_H, () -> switchTab(0));
-        cfgTab1Btn = mkHotspot(pX + PAD + tabW + 1, tabY, pW - PAD * 2 - tabW - 1, TAB_H, () -> switchTab(1));
+        cfgTab0Btn = mkBtn("Commands", pX + PAD,            tabY, tabW - 1,                TAB_H, () -> switchTab(0));
+        cfgTab1Btn = mkBtn("Servers", pX + PAD + tabW + 1, tabY, pW - PAD * 2 - tabW - 1, TAB_H, () -> switchTab(1));
+        mkBtn(themeLabel(WarpConfig.get().uiTheme), tBtnX(), tBtnY(), TBTN_W, TBTN_H, this::toggleTheme);
 
         if (tab == 0) buildCommandsTab();
         else          buildServersTab();
@@ -217,18 +193,15 @@ public class ConfigScreen extends Screen {
         fSwitchSrv = addField(x, cmdRowY(4), w, cfg.commands.switchServer,                  "server {id}");
         fPageDelay = addField(x, cmdRowY(5), w, String.valueOf(cfg.commands.pageDelayTicks), "1–100 tick");
 
-        // 三态主题切换按钮（右下角）→ hotspot，自定义渲染在 render() 中进行
-        mkHotspot(tBtnX(), tBtnY(), TBTN_W, TBTN_H, this::toggleTheme);
     }
-
     private void buildServersTab() {
         WarpConfig cfg = WarpConfig.get();
         int bW = 26, bY = srvBtnAreaY(), bX = pX + PAD;
         cfgSrvOpBtns.clear();
-        cfgSrvOpBtns.add(mkHotspot(bX,             bY, bW, 20, this::addSrv));
-        cfgSrvOpBtns.add(mkHotspot(bX + bW + 3,   bY, bW, 20, () -> moveSrv(-1)));
-        cfgSrvOpBtns.add(mkHotspot(bX + bW*2 + 6, bY, bW, 20, () -> moveSrv(1)));
-        cfgSrvOpBtns.add(mkHotspot(bX + bW*3 + 9, bY, bW, 20, this::delSrv));
+        cfgSrvOpBtns.add(mkBtn("+", bX,             bY, bW, 20, this::addSrv));
+        cfgSrvOpBtns.add(mkBtn("^", bX + bW + 3,   bY, bW, 20, () -> moveSrv(-1)));
+        cfgSrvOpBtns.add(mkBtn("v", bX + bW*2 + 6, bY, bW, 20, () -> moveSrv(1)));
+        cfgSrvOpBtns.add(mkBtn("X", bX + bW*3 + 9, bY, bW, 20, this::delSrv));
 
         int listX = pX + PAD, listY = srvListY();
         for (int i = 0; i < cfg.servers.size(); i++) {
@@ -251,40 +224,26 @@ public class ConfigScreen extends Screen {
 
     /** 根据当前主题决定按钮标签（显示切换到哪个主题）*/
     private static String themeLabel(String current) {
-        return switch (current) {
-            case "light"    -> "☾  切换为深色";
-            case "dark"     -> "✦  切换为风格化";
-            default         -> "☀  切换为明亮";  // stylized → light
-        };
+        return "light".equals(WarpConfig.normalizeTheme(current)) ? "Vanilla" : "Light";
     }
 
-    /** 三态循环：light → dark → stylized → light */
     private void toggleTheme() {
         saveCommandsFields();
         WarpConfig cfg = WarpConfig.get();
-        cfg.uiTheme = switch (cfg.uiTheme) {
-            case "light"  -> "dark";
-            case "dark"   -> "stylized";
-            default       -> "light";
-        };
+        cfg.uiTheme = "light".equals(WarpConfig.normalizeTheme(cfg.uiTheme)) ? "vanilla" : "light";
         cfg.save();
         applyTheme();
         buildTab();
-        statusMsg = switch (cfg.uiTheme) {
-            case "light"    -> "☀  已切换为明亮模式";
-            case "dark"     -> "☾  已切换为深色模式";
-            default         -> "✦  已切换为风格化模式";
-        };
+        statusMsg = "UI: " + ("light".equals(cfg.uiTheme) ? "Light" : "Vanilla");
         statusTick = 80;
     }
-
     private TextFieldWidget addField(int x, int rowY, int w, String value, String placeholder) {
         TextFieldWidget f = new TextFieldWidget(textRenderer, x, rowY + LABEL_H, w, FIELD_H,
                 Text.literal(""));
         f.setMaxLength(200);
         f.setText(value != null ? value : "");
         f.setPlaceholder(Text.literal(placeholder));
-        f.setDrawsBackground(false); // 禁用默认黑色背景，使用主题色自定义背景
+        f.setDrawsBackground(true); // 禁用默认黑色背景，使用主题色自定义背景
         addSelectableChild(f);
         addDrawableChild(f);
         return f;
@@ -376,10 +335,16 @@ public class ConfigScreen extends Screen {
 
     // ── 渲染 ─────────────────────────────────────────────────────
 
-    @Override public void renderBackground(DrawContext ctx, int mx, int my, float delta) {}
+    @Override public void renderBackground(DrawContext ctx, int mx, int my, float delta) {
+        if (isVanillaTheme()) super.renderBackground(ctx, mx, my, delta);
+    }
 
     @Override
     public void render(DrawContext ctx, int mx, int my, float delta) {
+        if (isVanillaTheme()) {
+            renderVanilla(ctx, mx, my, delta);
+            return;
+        }
         ctx.fill(0, 0, width, height, C_SCRIM);
 
         // 面板 — light/dark 用 r=8 圆角，stylized 保持直角带边框
@@ -471,7 +436,93 @@ public class ConfigScreen extends Screen {
                 ctx.fill(x, ry + LABEL_H, x + fw, ry + LABEL_H + FIELD_H, C_SEARCH_BG);
             }
         }
-        renderThemeButton(ctx, mx, my);
+    }
+
+    private void renderVanilla(DrawContext ctx, int mx, int my, float delta) {
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("WarpGUI Config"), width / 2, pY + 10, 0xFFFFFFFF);
+
+        int tabY = pY + TOOLBAR_H;
+        int tabW = (pW - PAD * 2) / 2;
+        int ty = tabY + (TAB_H - textRenderer.fontHeight) / 2;
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("Commands"),
+                pX + PAD + (tabW - 1) / 2, ty, tab == 0 ? 0xFFFFFFFF : 0xFFAAAAAA);
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("Servers"),
+                pX + PAD + tabW + 1 + (pW - PAD * 2 - tabW - 1) / 2, ty,
+                tab == 1 ? 0xFFFFFFFF : 0xFFAAAAAA);
+
+        if (tab == 0) renderVanillaCommandsTab(ctx);
+        else          renderVanillaServersTab(ctx, mx, my);
+
+        if (statusTick > 0) {
+            statusTick--;
+            ctx.drawTextWithShadow(textRenderer, Text.literal(statusMsg),
+                    pX + PAD, pY + pH - PAD - textRenderer.fontHeight, 0xFF55FF55);
+        }
+        super.render(ctx, mx, my, delta);
+    }
+
+    private void renderVanillaCommandsTab(DrawContext ctx) {
+        String[][] rows = {
+            {"Warp list command",  "{page}"},
+            {"Home list command",  "{page}"},
+            {"Warp teleport",      "{name}"},
+            {"Home teleport",      "{name}"},
+            {"Switch server",      "{id}"},
+            {"Page delay",         "ticks"},
+        };
+        int x = pX + PAD;
+        for (int i = 0; i < rows.length; i++) {
+            int ry = cmdRowY(i);
+            ctx.drawTextWithShadow(textRenderer, Text.literal(rows[i][0]), x, ry, 0xFFFFFFFF);
+            ctx.drawTextWithShadow(textRenderer, Text.literal(rows[i][1]),
+                    x + textRenderer.getWidth(rows[i][0]) + 6, ry, 0xFFAAAAAA);
+        }
+        ctx.drawTextWithShadow(textRenderer, Text.literal("UI Style"), tBtnX(), tBtnY() - textRenderer.fontHeight - 2, 0xFFAAAAAA);
+    }
+
+    private void renderVanillaServersTab(DrawContext ctx, int mx, int my) {
+        WarpConfig cfg = WarpConfig.get();
+        int listX = pX + PAD, listY = srvListY();
+        int listH = pH - (listY - pY) - PAD - 30;
+
+        ctx.fill(listX - 1, listY - 1, listX + SRV_LIST_W + 1, listY + listH + 1, 0xFF777777);
+        ctx.fill(listX, listY, listX + SRV_LIST_W, listY + listH, 0xAA000000);
+
+        for (int i = 0; i < cfg.servers.size(); i++) {
+            int iy = listY + 2 + i * SRV_ITEM_H;
+            if (iy + SRV_ITEM_H > listY + listH) break;
+            WarpConfig.ServerEntry e = cfg.servers.get(i);
+            boolean sel = i == selSrv;
+            boolean hover = !sel && mx >= listX && mx < listX + SRV_LIST_W
+                    && my >= iy && my < iy + SRV_ITEM_H;
+            if (sel) ctx.fill(listX + 1, iy, listX + SRV_LIST_W - 1, iy + SRV_ITEM_H, 0x66FFFFFF);
+            else if (hover) ctx.fill(listX + 1, iy, listX + SRV_LIST_W - 1, iy + SRV_ITEM_H, 0x33FFFFFF);
+            ctx.drawTextWithShadow(textRenderer, Text.literal(e.displayName()),
+                    listX + 8, iy + (SRV_ITEM_H - textRenderer.fontHeight) / 2,
+                    sel ? 0xFFFFFF55 : 0xFFFFFFFF);
+        }
+
+        if (selSrv >= 0 && selSrv < cfg.servers.size()) {
+            String[][] rows = {
+                {"Display name", ""},
+                {"Server ID", ""},
+                {"Keywords", ""},
+                {"Auto refresh", "hours, 0=off"},
+                {"Features", ""},
+            };
+            int ex = editX();
+            for (int i = 0; i < rows.length; i++) {
+                int ry = srvRowY(i);
+                ctx.drawTextWithShadow(textRenderer, Text.literal(rows[i][0]), ex, ry, 0xFFFFFFFF);
+                if (!rows[i][1].isEmpty()) {
+                    ctx.drawTextWithShadow(textRenderer, Text.literal(rows[i][1]),
+                            ex + textRenderer.getWidth(rows[i][0]) + 6, ry, 0xFFAAAAAA);
+                }
+            }
+        } else {
+            ctx.drawTextWithShadow(textRenderer, Text.literal("Select a server to edit"),
+                    editX(), srvBtnAreaY() + 46, 0xFFAAAAAA);
+        }
     }
 
     private boolean isFocused(int fieldIdx) {

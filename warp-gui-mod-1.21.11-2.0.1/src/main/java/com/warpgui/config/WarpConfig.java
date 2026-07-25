@@ -54,7 +54,7 @@ public class WarpConfig {
 
     public Commands          commands = new Commands();
     public List<ServerEntry> servers  = new ArrayList<>();
-    public String            uiTheme  = "light";  // "light" 或 "dark"
+    public String            uiTheme  = "vanilla";  // "vanilla" or "light"
 
     private static final Path CONFIG_PATH =
             FabricLoader.getInstance().getConfigDir().resolve("warpgui.json");
@@ -202,7 +202,12 @@ public class WarpConfig {
             if (!parsed.isEmpty()) { servers.clear(); servers.addAll(parsed); }
         }
         String theme = extractStr(json, "uiTheme");
-        if (theme != null && (theme.equals("light") || theme.equals("dark") || theme.equals("stylized"))) uiTheme = theme;
+        if (theme != null) uiTheme = normalizeTheme(theme);
+    }
+
+    public static String normalizeTheme(String theme) {
+        if ("light".equalsIgnoreCase(theme)) return "light";
+        return "vanilla";
     }
 
     private List<ServerEntry> parseServerArray(String arr) {

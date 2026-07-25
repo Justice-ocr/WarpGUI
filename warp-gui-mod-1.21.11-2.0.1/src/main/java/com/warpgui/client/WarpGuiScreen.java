@@ -129,11 +129,11 @@ public class WarpGuiScreen extends Screen {
     private boolean isLight, isDark, isStylized;
 
     private void applyTheme() {
-        String t = WarpConfig.get().uiTheme;
+        String t = WarpConfig.normalizeTheme(WarpConfig.get().uiTheme);
         isLight    = "light".equals(t);
         isDark     = "dark".equals(t);
         isStylized = "stylized".equals(t);
-        if (!isLight && !isDark) isStylized = true; // 默认 fallback
+        if (!isLight && !isDark) { isLight = true; isStylized = false; }
 
         if (isLight) {
             C_SCRIM      = L_SCRIM;    C_PANEL    = L_PANEL;
@@ -197,6 +197,7 @@ public class WarpGuiScreen extends Screen {
     // ── 状态 ──────────────────────────────────────────────────────
     private WarpListManager.Mode warpMode = WarpListManager.Mode.WARP;
     private boolean showBothModes = true;
+    private boolean sortByCreateTime;
     private TextFieldWidget searchField;
     private final List<WarpEntry> filtered = new ArrayList<>();
     private int cachedWarpCount, cachedHomeCount, guiPage, selIdx = -1;
@@ -205,7 +206,7 @@ public class WarpGuiScreen extends Screen {
 
     private static final int MAX_ROWS = 20; // 按钮数组上限
     private ButtonWidget prevPageBtn, nextPageBtn, modeBtn;
-    private ButtonWidget modernRefreshBtn, modernConfigBtn, modernCloseBtn;
+    private ButtonWidget modernRefreshBtn, modernConfigBtn, modernCloseBtn, sortBtn;
     private final List<ButtonWidget> srvBtns  = new ArrayList<>();
     private final List<ButtonWidget> tabBtns  = new ArrayList<>();
     private final ButtonWidget[] rowTpBtns   = new ButtonWidget[MAX_ROWS];
@@ -256,7 +257,7 @@ public class WarpGuiScreen extends Screen {
             listX = pX + 8;
             listY = pY + toolbarH + tabH + 4 + searchH + 4;
             listW = pW - 16; listH = colH + rowH * itemsPerPage; rowBtnY0 = listY + colH;
-            colNumW = 0; colBtnW = 64;
+            colNumW = 0; colBtnW = isVanillaTheme() ? 78 : 64;
             colDateW = textRenderer.getWidth("02-28") + 8;
             int rem  = listW - colDateW - colBtnW - 8;
             colNameW = Math.max(40, (int)(rem * 0.38)); colCommentW = rem - colNameW;
@@ -285,7 +286,7 @@ public class WarpGuiScreen extends Screen {
         searchField.setMaxLength(64);
         searchField.setPlaceholder(Text.literal("搜索名称或注释..."));
         searchField.setChangedListener(q -> { guiPage = 0; selIdx = -1; rebuildList(); });
-        searchField.setDrawsBackground(false); // 禁用默认黑色背景，使用自定义圆角背景
+        searchField.setDrawsBackground(true); // 禁用默认黑色背景，使用自定义圆角背景
         addSelectableChild(searchField);
         setInitialFocus(searchField);
 
@@ -309,14 +310,30 @@ public class WarpGuiScreen extends Screen {
             int iconX3 = pX + pW - 8 - 22;           // ✕
             int iconX2 = iconX3 - 4 - 22;             // ↻
             int iconX1 = iconX2 - 4 - 22;             // ⚙
-            modernCloseBtn  = mkHotspot(iconX3, iconY, 22, iconH, this::close);
-            modernRefreshBtn= mkHotspot(iconX2, iconY, 22, iconH, this::doRefresh);
-            modernConfigBtn = mkHotspot(iconX1, iconY, 22, iconH,
-                    () -> client.setScreen(new ConfigScreen(this)));
+            int sortW  = 44;
+            int sortX  = iconX1 - 6 - sortW;
+            if (isVanillaTheme()) {
+                modernCloseBtn  = mkVanillaBtn("X", iconX3, iconY, 22, iconH, this::close);
+                modernRefreshBtn= mkVanillaBtn("R", iconX2, iconY, 22, iconH, this::doRefresh);
+                modernConfigBtn = mkVanillaBtn("...", iconX1, iconY, 22, iconH,
+                        () -> client.setScreen(new ConfigScreen(this)));
+                sortBtn = mkVanillaBtn("Sort", sortX, iconY, sortW, iconH, this::toggleCreateTimeSort);
+            } else {
+                modernCloseBtn  = mkHotspot(iconX3, iconY, 22, iconH, this::close);
+                modernRefreshBtn= mkHotspot(iconX2, iconY, 22, iconH, this::doRefresh);
+                modernConfigBtn = mkHotspot(iconX1, iconY, 22, iconH,
+                        () -> client.setScreen(new ConfigScreen(this)));
+                sortBtn = mkHotspot(sortX, iconY, sortW, iconH, this::toggleCreateTimeSort);
+            }
             // 翻页按钮：页脚两端，同样用 hotspot
             int ftY = listY + listH + (footerH - 20) / 2;
-            prevPageBtn = mkHotspot(pX + 8,       ftY, 28, 20, () -> changePage(-1));
-            nextPageBtn = mkHotspot(pX + pW - 36, ftY, 28, 20, () -> changePage(+1));
+            if (isVanillaTheme()) {
+                prevPageBtn = mkVanillaBtn("<", pX + 8,       ftY, 40, 20, () -> changePage(-1));
+                nextPageBtn = mkVanillaBtn(">", pX + pW - 48, ftY, 40, 20, () -> changePage(+1));
+            } else {
+                prevPageBtn = mkHotspot(pX + 8,       ftY, 28, 20, () -> changePage(-1));
+                nextPageBtn = mkHotspot(pX + pW - 36, ftY, 28, 20, () -> changePage(+1));
+            }
         }
 
         buildServerButtons();
@@ -335,7 +352,11 @@ public class WarpGuiScreen extends Screen {
     }
 
     private ButtonWidget mkBtn(String lbl, int x, int y, int w, Runnable r) {
-        int h = isStylized ? 18 : 16;
+        int h = isStylized ? 18 : 20;
+        return addDrawableChild(ButtonWidget.builder(Text.literal(lbl), $ -> r.run())
+                .dimensions(x, y, w, h).build());
+    }
+    private ButtonWidget mkVanillaBtn(String lbl, int x, int y, int w, int h, Runnable r) {
         return addDrawableChild(ButtonWidget.builder(Text.literal(lbl), $ -> r.run())
                 .dimensions(x, y, w, h).build());
     }
@@ -382,6 +403,7 @@ public class WarpGuiScreen extends Screen {
             int mBtnW = textRenderer.getWidth("warp+home") + 16;
             int rightReserved = iconAreaW + 6 + mBtnW; // 图标区 + 间距 + modeBtn
             int titleW = textRenderer.getWidth("传送点列表") + 18;
+            rightReserved += 44 + 6;
             int tagsStart = pX + 8 + titleW + 8;
             int tagsEnd   = pX + pW - rightReserved - 8;
             int totalTagW = 0;
@@ -392,11 +414,15 @@ public class WarpGuiScreen extends Screen {
             int cx = startX;
             for (WarpConfig.ServerEntry srv : all) {
                 int tw = textRenderer.getWidth(srv.displayName()) + PAD * 2;
-                srvBtns.add(mkHotspot(cx, tagY, tw, tagH, () -> switchToServer(srv)));
+                srvBtns.add(isVanillaTheme()
+                        ? mkVanillaBtn(srv.displayName(), cx, tagY, tw, tagH, () -> switchToServer(srv))
+                        : mkHotspot(cx, tagY, tw, tagH, () -> switchToServer(srv)));
                 cx += tw + GAP;
             }
-            int modeBtnX = pX + pW - iconAreaW - 6 - mBtnW;
-            modeBtn = mkHotspot(modeBtnX, tagY, mBtnW, tagH, this::toggleMode);
+            int modeBtnX = pX + pW - iconAreaW - 6 - 44 - 6 - mBtnW;
+            modeBtn = isVanillaTheme()
+                    ? mkVanillaBtn("warp+home", modeBtnX, tagY, mBtnW, tagH, this::toggleMode)
+                    : mkHotspot(modeBtnX, tagY, mBtnW, tagH, this::toggleMode);
         }
     }
 
@@ -405,10 +431,17 @@ public class WarpGuiScreen extends Screen {
         if (!showBothModes) return;
         int tabY = pY + toolbarH + serverBarH;
         int tabW = (pW - 20) / 2;
-        tabBtns.add(mkHotspot(pX + 8, tabY, tabW, tabH,
-                () -> setWarpMode(WarpListManager.Mode.WARP)));
-        tabBtns.add(mkHotspot(pX + 8 + tabW + 4, tabY, tabW - 4, tabH,
-                () -> setWarpMode(WarpListManager.Mode.HOME)));
+        if (isVanillaTheme()) {
+            tabBtns.add(mkVanillaBtn("Warp", pX + 8, tabY, tabW, tabH,
+                    () -> setWarpMode(WarpListManager.Mode.WARP)));
+            tabBtns.add(mkVanillaBtn("Home", pX + 8 + tabW + 4, tabY, tabW - 4, tabH,
+                    () -> setWarpMode(WarpListManager.Mode.HOME)));
+        } else {
+            tabBtns.add(mkHotspot(pX + 8, tabY, tabW, tabH,
+                    () -> setWarpMode(WarpListManager.Mode.WARP)));
+            tabBtns.add(mkHotspot(pX + 8 + tabW + 4, tabY, tabW - 4, tabH,
+                    () -> setWarpMode(WarpListManager.Mode.HOME)));
+        }
     }
 
     private void buildRowButtons() {
@@ -419,14 +452,23 @@ public class WarpGuiScreen extends Screen {
             if (isStylized) {
                 tpX = listX + listW - colBtnW + 2; tpW = 34;
                 stX = tpX + 38;                    stW = 24;
+            } else if (isVanillaTheme()) {
+                tpX = listX + listW - colBtnW;     tpW = 38;
+                stX = tpX + 44;                    stW = 34;
             } else {
                 tpX = listX + listW - colBtnW;     tpW = 30;
                 stX = tpX + 30 + 6;                stW = 20;
             }
-            rowTpBtns[i]   = mkHotspot(tpX, iy + 2, tpW, rowH - 4,
-                    () -> teleportTo(guiPage * itemsPerPage + fi));
-            rowStarBtns[i] = mkHotspot(stX, iy + 2, stW, rowH - 4,
-                    () -> onStarClick(fi));
+            rowTpBtns[i] = isVanillaTheme()
+                    ? mkVanillaBtn("TP", tpX, iy + 2, tpW, rowH - 4,
+                            () -> teleportTo(guiPage * itemsPerPage + fi))
+                    : mkHotspot(tpX, iy + 2, tpW, rowH - 4,
+                            () -> teleportTo(guiPage * itemsPerPage + fi));
+            rowStarBtns[i] = isVanillaTheme()
+                    ? mkVanillaBtn("*", stX, iy + 1, stW, rowH - 2,
+                            () -> onStarClick(fi))
+                    : mkHotspot(stX, iy + 2, stW, rowH - 4,
+                            () -> onStarClick(fi));
             rowSelBtns[i]  = mkHotspot(listX, iy, tpX - listX, rowH,
                     () -> onRowClick(fi));
             boolean vis = (guiPage * itemsPerPage + i) < filtered.size();
@@ -470,6 +512,17 @@ public class WarpGuiScreen extends Screen {
             if (q.isEmpty() || e.name.toLowerCase().contains(q)
                             || e.comment.toLowerCase().contains(q))
                 filtered.add(e);
+        filtered.sort((a, b) -> {
+            if (a.starred != b.starred) return a.starred ? -1 : 1;
+            if (!sortByCreateTime) return 0;
+            boolean ae = a.date == null || a.date.isEmpty();
+            boolean be = b.date == null || b.date.isEmpty();
+            if (ae && be) return a.name.compareToIgnoreCase(b.name);
+            if (ae) return 1;
+            if (be) return -1;
+            int c = b.date.compareTo(a.date);
+            return c != 0 ? c : a.name.compareToIgnoreCase(b.name);
+        });
         int mx = Math.max(0, (filtered.size() - 1) / itemsPerPage);
         if (guiPage > mx) guiPage = mx;
         cachedWarpCount = WarpListManager.getInstance().warpCount();
@@ -482,7 +535,12 @@ public class WarpGuiScreen extends Screen {
         for (int i = 0; i < itemsPerPage; i++) {
             boolean vis = (ps + i) < filtered.size();
             if (rowTpBtns[i]   != null) rowTpBtns[i].visible   = vis;
-            if (rowStarBtns[i] != null) rowStarBtns[i].visible = vis;
+            if (rowStarBtns[i] != null) {
+                rowStarBtns[i].visible = vis;
+                if (vis) rowStarBtns[i].setMessage(Text.literal(filtered.get(ps + i).starred
+                        ? (isVanillaTheme() ? "★" : "*")
+                        : (isVanillaTheme() ? "☆" : "+")));
+            }
             if (rowSelBtns[i]  != null) rowSelBtns[i].visible  = vis;
         }
     }
@@ -491,6 +549,17 @@ public class WarpGuiScreen extends Screen {
         int mx = Math.max(0, (filtered.size() - 1) / itemsPerPage);
         if (prevPageBtn != null) prevPageBtn.active = guiPage > 0;
         if (nextPageBtn != null) nextPageBtn.active = guiPage < mx;
+        if (modeBtn != null) {
+            boolean canToggle = cachedActiveSrv != null && cachedActiveSrv.hasWarp && cachedActiveSrv.hasHome;
+            modeBtn.active = canToggle;
+            modeBtn.setMessage(Text.literal(!canToggle
+                    ? (cachedActiveSrv != null && cachedActiveSrv.hasWarp ? "Warp"
+                    :  cachedActiveSrv != null && cachedActiveSrv.hasHome ? "Home" : "N/A")
+                    : showBothModes ? "Warp+Home" : "Warp"));
+        }
+        if (sortBtn != null) {
+            sortBtn.setMessage(Text.literal(sortByCreateTime ? "Time" : "Sort"));
+        }
     }
 
     private void setWarpMode(WarpListManager.Mode m) {
@@ -505,6 +574,13 @@ public class WarpGuiScreen extends Screen {
         if (cachedActiveSrv == null
                 || !cachedActiveSrv.hasWarp || !cachedActiveSrv.hasHome) return;
         showBothModes = !showBothModes; rebuildList();
+    }
+
+    private void toggleCreateTimeSort() {
+        sortByCreateTime = !sortByCreateTime;
+        guiPage = 0;
+        selIdx = -1;
+        rebuildList();
     }
 
     private void maybeAutoRefresh(WarpConfig.ServerEntry srv) {
@@ -563,13 +639,15 @@ public class WarpGuiScreen extends Screen {
 
     // ── 渲染 分派 ─────────────────────────────────────────────────
 
-    @Override public void renderBackground(DrawContext ctx, int mx, int my, float delta) {}
+    private boolean isVanillaTheme() { return "vanilla".equals(WarpConfig.normalizeTheme(WarpConfig.get().uiTheme)); }
+
+    @Override public void renderBackground(DrawContext ctx, int mx, int my, float delta) { super.renderBackground(ctx, mx, my, delta); }
 
     @Override
     public void render(DrawContext ctx, int mx, int my, float delta) {
         mouseX = mx; mouseY = my;
-        if (isStylized) renderStylized(ctx, mx, my, delta);
-        else            renderModern(ctx, mx, my, delta);
+        if (isVanillaTheme()) renderVanilla(ctx, mx, my, delta);
+        else                  renderModern(ctx, mx, my, delta);
         super.render(ctx, mx, my, delta);
     }
 
@@ -599,6 +677,101 @@ public class WarpGuiScreen extends Screen {
         renderModernColHeader(ctx);
         renderModernListBody(ctx, loading);
         renderModernFooter(ctx);
+    }
+
+    private void renderVanilla(DrawContext ctx, int mx, int my, float delta) {
+        boolean loading = WarpListManager.getInstance().isLoading();
+
+        int titleY = pY + 10;
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("WarpGUI"), width / 2, titleY, 0xFFFFFFFF);
+
+        WarpListManager wlm = WarpListManager.getInstance();
+        if (wlm.isIncrementalRefreshing() || loading) {
+            String msg = wlm.isIncrementalRefreshing() ? "Checking..." : "Loading...";
+            ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(msg), width / 2, titleY + 14, 0xFFFFFF55);
+        }
+
+        int sfY = pY + toolbarH + tabH + 4;
+        ctx.fill(listX - 2, sfY - 2, listX + listW + 2, sfY + searchH + 2, 0xAA000000);
+        ctx.fill(listX - 1, sfY - 1, listX + listW + 1, sfY + searchH + 1, 0xFF777777);
+        ctx.fill(listX, sfY, listX + listW, sfY + searchH, 0xFF000000);
+        searchField.render(ctx, mx, my, delta);
+
+        renderVanillaModeTabs(ctx);
+        renderVanillaList(ctx, loading);
+        renderVanillaFooter(ctx);
+    }
+
+    private void renderVanillaModeTabs(DrawContext ctx) {
+        if (!showBothModes) {
+            String lbl = warpMode == WarpListManager.Mode.WARP
+                    ? "Warp" + (cachedWarpCount > 0 ? "  " + cachedWarpCount : "")
+                    : "Home" + (cachedHomeCount > 0 ? "  " + cachedHomeCount : "");
+            ctx.drawTextWithShadow(textRenderer, Text.literal(lbl), pX + 10,
+                    pY + toolbarH + (tabH - textRenderer.fontHeight) / 2, 0xFFFFFFA0);
+            return;
+        }
+
+        int tabY = pY + toolbarH;
+        int tabW = (pW - 20) / 2;
+        boolean wa = warpMode == WarpListManager.Mode.WARP;
+        String wl = "Warp" + (cachedWarpCount > 0 ? "  " + cachedWarpCount : "");
+        String hl = "Home" + (cachedHomeCount > 0 ? "  " + cachedHomeCount : "");
+        int ty = tabY + (tabH - textRenderer.fontHeight) / 2;
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(wl), pX + 8 + tabW / 2, ty,
+                wa ? 0xFFFFFFFF : 0xFFAAAAAA);
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(hl), pX + 8 + tabW + 4 + (tabW - 4) / 2, ty,
+                !wa ? 0xFFFFFFFF : 0xFFAAAAAA);
+    }
+
+    private void renderVanillaList(DrawContext ctx, boolean loading) {
+        int headerY = listY;
+        ctx.drawTextWithShadow(textRenderer, Text.literal("Name"), listX + 8, headerY + 4, 0xFFAAAAAA);
+        ctx.drawTextWithShadow(textRenderer, Text.literal("Comment"), listX + 8 + colNameW, headerY + 4, 0xFFAAAAAA);
+        ctx.drawTextWithShadow(textRenderer, Text.literal("Date"), listX + 8 + colNameW + colCommentW, headerY + 4, 0xFFAAAAAA);
+
+        if (filtered.isEmpty()) {
+            String msg = cachedActiveSrv != null && !cachedActiveSrv.hasWarp && !cachedActiveSrv.hasHome
+                    ? "This server has no warp/home support"
+                    : loading ? "Loading..."
+                    : cachedWarpCount == 0 && cachedHomeCount == 0 ? "No data. Press R to refresh"
+                    : "No matching entries";
+            ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(msg), width / 2,
+                    listY + colH + (rowH * itemsPerPage - textRenderer.fontHeight) / 2, 0xFFAAAAAA);
+            return;
+        }
+
+        int ps = guiPage * itemsPerPage;
+        for (int i = 0; i < itemsPerPage; i++) {
+            int idx = ps + i;
+            if (idx >= filtered.size()) break;
+            WarpEntry e = filtered.get(idx);
+            int iy = rowBtnY0 + i * rowH;
+            boolean sel = idx == selIdx;
+            boolean hov = mouseX >= listX && mouseX < listX + listW && mouseY >= iy && mouseY < iy + rowH;
+
+            if (sel) ctx.fill(listX, iy, listX + listW, iy + rowH, 0x66FFFFFF);
+            else if (hov) ctx.fill(listX, iy, listX + listW, iy + rowH, 0x33FFFFFF);
+
+            int fy = iy + (rowH - textRenderer.fontHeight) / 2;
+            int nameColor = e.starred ? 0xFFFFFF55 : 0xFFFFFFFF;
+            ctx.drawTextWithShadow(textRenderer, Text.literal(truncate(e.name, colNameW - 8)), listX + 8, fy, nameColor);
+            if (e.hasComment()) {
+                ctx.drawTextWithShadow(textRenderer, Text.literal(truncate(e.comment, colCommentW - 8)),
+                        listX + 8 + colNameW, fy, 0xFFCCCCCC);
+            }
+            if (!e.date.isEmpty()) {
+                ctx.drawTextWithShadow(textRenderer, Text.literal(e.shortDate()),
+                        listX + 8 + colNameW + colCommentW, fy, 0xFFAAAAAA);
+            }
+        }
+    }
+
+    private void renderVanillaFooter(DrawContext ctx) {
+        int mx2 = Math.max(0, (filtered.size() - 1) / itemsPerPage);
+        String info = (guiPage + 1) + " / " + (mx2 + 1) + "  -  " + filtered.size() + " entries";
+        ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(info), width / 2,
+                listY + listH + (footerH - textRenderer.fontHeight) / 2, 0xFFAAAAAA);
     }
 
     private void renderModernToolbar(DrawContext ctx, boolean loading) {
@@ -670,6 +843,8 @@ public class WarpGuiScreen extends Screen {
             modeBtn.active = canToggle;
         }
 
+        renderModernSortBtn(ctx);
+
         // ── 工具栏右侧图标按钮（⚙ ↻ ✕）自定义渲染 ─────────────────
         renderModernIconBtn(ctx, modernConfigBtn, "⚙", false);
         renderModernIconBtn(ctx, modernRefreshBtn, "↻", false);
@@ -677,6 +852,22 @@ public class WarpGuiScreen extends Screen {
     }
 
     /** 绘制工具栏图标按钮：常态有圆角边框+底色，hover 时加深，isDanger 时 hover 变红 */
+    private void renderModernSortBtn(DrawContext ctx) {
+        if (sortBtn == null || isVanillaTheme()) return;
+        boolean hover = isHovering(sortBtn);
+        int bg = sortByCreateTime
+                ? (isDark ? 0xFF183858 : 0xFFDDEEFF)
+                : hover ? C_SRV_ACTIVE : (isDark ? 0xFF182030 : 0xFFEBEEF3);
+        int bd = sortByCreateTime ? C_ACCENT : C_BORDER;
+        int fg = sortByCreateTime || hover ? C_ACCENT : C_TEXT;
+        String lbl = sortByCreateTime ? "Time" : "Sort";
+        roundRect(ctx, sortBtn.getX(), sortBtn.getY(), sortBtn.getWidth(), sortBtn.getHeight(), bd, bg, 4);
+        ctx.drawText(textRenderer, Text.literal(lbl),
+                sortBtn.getX() + (sortBtn.getWidth() - textRenderer.getWidth(lbl)) / 2,
+                sortBtn.getY() + (sortBtn.getHeight() - textRenderer.fontHeight) / 2,
+                fg, false);
+    }
+
     private void renderModernIconBtn(DrawContext ctx, ButtonWidget btn, String icon, boolean isDanger) {
         if (btn == null) return;
         boolean hover = isHovering(btn);
