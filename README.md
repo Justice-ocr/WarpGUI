@@ -3,9 +3,28 @@
 **WarpGUI** 是一个 Minecraft 客户端 Fabric 模组，为 HAW（Home and Warp）服务端插件提供图形化传送点管理界面。
 
 > 仅客户端，无需服务端安装。  
-> 当前 monorepo 同时维护 Minecraft **1.21.4 / 1.21.8 / 1.21.11**。
+> 支持 Minecraft **1.21.4 / 1.21.8 / 1.21.11**。
 
-## 仓库结构
+## 分支策略
+
+| 分支 | 内容 | 用途 |
+|------|------|------|
+| `main` | monorepo，包含全部版本源码 | 总览、对照、跨版本同步 |
+| `mc-1.21.4` | **仅** 1.21.4 工程（仓库根目录） | 该版本开发 / 构建 / 发布 |
+| `mc-1.21.8` | **仅** 1.21.8 工程（仓库根目录） | 该版本开发 / 构建 / 发布 |
+| `mc-1.21.11` | **仅** 1.21.11 工程（仓库根目录） | 该版本开发 / 构建 / 发布 |
+
+日常开发某个版本时，请切换到对应 `mc-*` 分支：
+
+```bash
+git checkout mc-1.21.8
+gradlew.bat build   # Windows
+./gradlew build     # Linux/macOS
+```
+
+跨版本同步逻辑时，在 `main` 的 `versions/*` 中对照修改，再分别同步到各 `mc-*` 分支。
+
+## main 目录结构
 
 ```text
 WarpGUI/
@@ -13,12 +32,10 @@ WarpGUI/
 ├── LICENSE
 ├── .gitignore
 └── versions/
-    ├── 1.21.4/    # Minecraft 1.21.4
-    ├── 1.21.8/    # Minecraft 1.21.8
-    └── 1.21.11/   # Minecraft 1.21.11
+    ├── 1.21.4/
+    ├── 1.21.8/
+    └── 1.21.11/
 ```
-
-每个版本是**独立可构建**的 Fabric 工程。共享业务逻辑以 `1.21.8` 为基准对齐；仅保留版本相关差异（如按键绑定 API、`fabric.mod.json`、Loom/依赖版本）。
 
 ## 功能
 
@@ -32,42 +49,18 @@ WarpGUI/
 
 ## 版本对照
 
-| Minecraft | 工程目录 | 构建产物 |
-|-----------|----------|----------|
-| 1.21.4 | `versions/1.21.4` | `warp-gui-2.0.1.jar` |
-| 1.21.8 | `versions/1.21.8` | `warp-gui-2.0.1.jar` |
-| 1.21.11 | `versions/1.21.11` | `warp-gui-2.0.1.jar` |
+| Minecraft | main 路径 | 版本分支 |
+|-----------|-----------|----------|
+| 1.21.4 | `versions/1.21.4` | `mc-1.21.4` |
+| 1.21.8 | `versions/1.21.8` | `mc-1.21.8` |
+| 1.21.11 | `versions/1.21.11` | `mc-1.21.11` |
 
-## 构建
-
-**要求：** Java 21+、网络（首次下载依赖）
+## 在 main 上构建某个版本
 
 ```bash
 cd versions/1.21.8
-# Windows
 gradlew.bat build
-# Linux/macOS
-chmod +x gradlew && ./gradlew build
 ```
-
-产物位于对应版本目录的 `build/libs/`。
-
-## 分支策略
-
-| 分支 | 说明 |
-|------|------|
-| `main` | **唯一开发主干**，包含全部版本目录 |
-| `mc-1.21.4` / `mc-1.21.8` / `mc-1.21.11` | 兼容用别名，内容与 `main` 同步，不再单独演进 |
-
-请在 `main` 上开发；跨版本改动时同步修改 `versions/*` 中的共享源码，并保留各版本 API 差异文件。
-
-## 使用
-
-1. 安装 Fabric Loader 与 Fabric API
-2. 将对应版本 jar 放入 `.minecraft/mods/`
-3. 进服后按 `G` 打开 GUI，点刷新抓取列表
-
-默认快捷键与指令模板可在配置界面修改。
 
 ## License
 
