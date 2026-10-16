@@ -1401,6 +1401,8 @@ public class WarpGuiScreen extends Screen {
 
     @Override public boolean shouldPause() { return false; }
     @Override public void close() {
-        WarpListManager.getInstance().stopCapturing(); super.close();
+        WarpGuiMod.releaseOpenGuiKey();
+        WarpListManager.getInstance().stopCapturing();
+        super.close();
     }
 }

@@ -18,10 +18,18 @@ public class WarpListManager {
 
     private int fetchDelayTicks() { return WarpConfig.get().commands.pageDelayTicks; }
 
-    private static final Pattern WARP_HEADER = Pattern.compile("共享点列表\\s*[（(]第\\s*(\\d+)/(\\d+)\\s*页[）)]");
-    private static final Pattern HOME_HEADER = Pattern.compile("传送点列表\\s*[（(]第\\s*(\\d+)/(\\d+)\\s*页[）)]");
+    private static final Pattern WARP_HEADER = Pattern.compile(
+            "(?:共享点列表|Warp\\s+列表)\\s*(?:[（(]\\s*)?第\\s*(\\d+)\\s*/\\s*(\\d+)\\s*页(?:[）)])?");
+    private static final Pattern HOME_HEADER = Pattern.compile(
+            "(?:传送点列表|Home\\s+列表)\\s*(?:[（(]\\s*)?第\\s*(\\d+)\\s*/\\s*(\\d+)\\s*页(?:[）)])?");
+    private static final Pattern HAW_WARP_HEADER = Pattern.compile(
+            "Warp\\s+列表\\s+第\\s*\\d+\\s*/\\s*\\d+\\s*页");
+    private static final Pattern HAW_HOME_HEADER = Pattern.compile(
+            "Home\\s+列表\\s+第\\s*\\d+\\s*/\\s*\\d+\\s*页");
     private static final Pattern LINE_PATTERN =
         Pattern.compile("^ID:(\\d+)\\s+(\\S+)(?:\\s+(.+?))?\\s+(\\d{4}-\\d{2}-\\d{2})\\s+\\d{2}:\\d{2}:\\d{2}\\s*$");
+    private static final Pattern HAW_LINE_PATTERN =
+        Pattern.compile("^#\\d+\\s+(\\S+)(?:\\s+(.+?))?\\s+(\\d{4}-\\d{2}-\\d{2})\\s+\\d{2}:\\d{2}:\\d{2}\\s*$");
     private static final Pattern PAGE_LINE = Pattern.compile("[<《]上一页[>》]|[<《]下一页[>》]|第\\d+页/共\\d+页");
 
     private final Map<String, List<WarpEntry>> warpLists = new HashMap<>();
@@ -107,11 +115,21 @@ public class WarpListManager {
     }
 
     public void tick(MinecraftClient client) {
-        if (pendingPage == 0 || !capturing) return;
+        if (!capturing || pendingPage == 0) return;
         if (++ticksSinceSend >= fetchDelayTicks()) {
             int page = pendingPage;
             pendingPage = 0; ticksSinceSend = 0;
-            sendPage(client, page, fetchingMode);
+            if (page < 0) {
+                capturing = false;
+                if (refreshKind == RefreshKind.INCREMENTAL) {
+                    flushIncrementalToDisk(fetchingMode);
+                } else {
+                    fetchingAll = false;
+                    flushToDisk(fetchingMode);
+                }
+            } else {
+                sendPage(client, page, fetchingMode);
+            }
         }
     }
 
@@ -122,16 +140,23 @@ public class WarpListManager {
 
         Matcher wh = WARP_HEADER.matcher(c);
         Matcher hh = HOME_HEADER.matcher(c);
+        boolean headerMatched = false;
+        boolean hawHeader = false;
         if (wh.find()) {
             fetchingMode = Mode.WARP;
             currentPage = Integer.parseInt(wh.group(1));
             totalPages  = Integer.parseInt(wh.group(2));
-            return;
-        }
-        if (hh.find()) {
+            headerMatched = true;
+            hawHeader = HAW_WARP_HEADER.matcher(c).find();
+        } else if (hh.find()) {
             fetchingMode = Mode.HOME;
             currentPage = Integer.parseInt(hh.group(1));
             totalPages  = Integer.parseInt(hh.group(2));
+            headerMatched = true;
+            hawHeader = HAW_HOME_HEADER.matcher(c).find();
+        }
+        if (headerMatched) {
+            if (hawHeader) handleHawPageHeader();
             return;
         }
 
@@ -142,10 +167,25 @@ public class WarpListManager {
         }
 
         Matcher m = LINE_PATTERN.matcher(c);
-        if (m.find()) {
-            String name    = m.group(2).trim();
-            String comment = m.group(3) != null ? m.group(3).trim() : "";
-            String date    = m.group(4);
+        boolean oldLine = m.find();
+        boolean hawLine = false;
+        if (!oldLine) {
+            m = HAW_LINE_PATTERN.matcher(c);
+            hawLine = m.find();
+        }
+        if (oldLine || hawLine) {
+            String name;
+            String comment;
+            String date;
+            if (hawLine) {
+                name = m.group(1).trim();
+                comment = m.group(2) != null ? m.group(2).trim() : "";
+                date = m.group(3);
+            } else {
+                name = m.group(2).trim();
+                comment = m.group(3) != null ? m.group(3).trim() : "";
+                date = m.group(4);
+            }
             boolean isHome = fetchingMode == Mode.HOME;
 
             if (refreshKind == RefreshKind.INCREMENTAL) {
@@ -161,6 +201,20 @@ public class WarpListManager {
                 }
             }
         }
+    }
+
+    private void handleHawPageHeader() {
+        if (refreshKind == RefreshKind.INCREMENTAL) {
+            if (currentPage == 1 && totalPages > 1) {
+                incrementalBuf.clear();
+                pendingPage = totalPages;
+            } else if (totalPages > 0 && currentPage >= totalPages) {
+                pendingPage = -1;
+            }
+        } else if (fetchingAll) {
+            pendingPage = currentPage < totalPages ? currentPage + 1 : -1;
+        }
+        ticksSinceSend = 0;
     }
 
     private void handleFullPageLine() {

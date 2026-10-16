@@ -25,6 +25,17 @@ public class WarpGuiMod implements ClientModInitializer {
     private static final KeyBinding.Category CATEGORY =
             KeyBinding.Category.create(Identifier.of(MOD_ID, "category"));
 
+    /**
+     * Clear the GUI key state when the screen closes. The key may have opened
+     * the screen while still physically held, and Minecraft otherwise keeps
+     * the binding pressed until a matching release event is processed.
+     */
+    public static void releaseOpenGuiKey() {
+        if (openGuiKey != null) {
+            KeyBinding.setKeyPressed(openGuiKey.getBoundKey(), false);
+        }
+    }
+
     @Override
     public void onInitializeClient() {
         LOGGER.info("[WarpGUI] 模组加载完成");
