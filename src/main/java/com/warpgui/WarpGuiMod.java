@@ -32,7 +32,7 @@ public class WarpGuiMod implements ClientModInitializer {
      */
     public static void releaseOpenGuiKey() {
         if (openGuiKey != null) {
-            KeyBinding.setKeyPressed(openGuiKey.getBoundKey(), false);
+            openGuiKey.setPressed(false);
         }
     }
 
