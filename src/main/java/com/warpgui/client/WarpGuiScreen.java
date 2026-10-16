@@ -288,7 +288,7 @@ public class WarpGuiScreen extends Screen {
         searchField.setChangedListener(q -> { guiPage = 0; selIdx = -1; rebuildList(); });
         searchField.setDrawsBackground(true); // 禁用默认黑色背景，使用自定义圆角背景
         addSelectableChild(searchField);
-        setInitialFocus(searchField);
+        // 搜索框保留可点击输入，但不在打开界面时自动抢占键盘焦点。
 
         if (isStylized) {
             // 风格化：刷新+关闭在 headerH 区域
