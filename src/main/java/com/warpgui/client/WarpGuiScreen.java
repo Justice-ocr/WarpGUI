@@ -496,6 +496,7 @@ public class WarpGuiScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+        MalilibKeyCompat.syncReleasedKeys();
         WarpListManager m = WarpListManager.getInstance();
         m.tick(client);
         if (m.isLoading() || m.isIncrementalRefreshing()) {
@@ -1400,8 +1401,13 @@ public class WarpGuiScreen extends Screen {
     }
 
     @Override public boolean shouldPause() { return false; }
-    @Override public void close() {
+    @Override public void removed() {
+        super.removed();
         WarpGuiMod.releaseOpenGuiKey();
+        MalilibKeyCompat.syncReleasedKeys();
+    }
+
+    @Override public void close() {
         WarpListManager.getInstance().stopCapturing();
         super.close();
     }
